@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Wameedh/ccflow/internal/workspace"
 	"github.com/spf13/cobra"
+
+	"github.com/Wameedh/ccflow/internal/workspace"
 )
 
 var listCmd = &cobra.Command{

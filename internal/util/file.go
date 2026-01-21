@@ -155,8 +155,8 @@ func CopyFile(src, dst string) error {
 	}
 
 	// Ensure parent directory exists
-	if err := EnsureDir(filepath.Dir(dst)); err != nil {
-		return err
+	if dirErr := EnsureDir(filepath.Dir(dst)); dirErr != nil {
+		return dirErr
 	}
 
 	destFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, sourceInfo.Mode())

@@ -12,30 +12,25 @@ linters:
     - misspell
     - unconvert
     - ineffassign
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+    misspell:
+      locale: US
 
 formatters:
   enable:
     - gofmt
     - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes: github.com/Wameedh/ccflow
 
-linters-settings:
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment
-  misspell:
-    locale: US
-
-formatters-settings:
-  gofmt:
-    simplify: true
-  goimports:
-    local-prefixes: github.com/Wameedh/ccflow
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - govet
-  max-issues-per-linter: 50
-  max-same-issues: 10
+output:
+  formats:
+    text:
+      path: stdout

@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/spf13/cobra"
+
 	"github.com/Wameedh/ccflow/internal/blueprint"
 	"github.com/Wameedh/ccflow/internal/config"
 	"github.com/Wameedh/ccflow/internal/generator"
 	"github.com/Wameedh/ccflow/internal/installer"
 	"github.com/Wameedh/ccflow/internal/util"
 	"github.com/Wameedh/ccflow/internal/workspace"
-	"github.com/spf13/cobra"
 )
 
 var runCmd = &cobra.Command{
@@ -45,7 +46,7 @@ func runWorkflow(cmd *cobra.Command, args []string) {
 	var blueprintID string
 	if len(args) > 0 {
 		blueprintID = args[0]
-		if _, err := bpManager.Get(blueprintID); err != nil {
+		if _, getErr := bpManager.Get(blueprintID); getErr != nil {
 			exitWithError("unknown blueprint: %s\nRun 'ccflow list-blueprints' to see available blueprints", blueprintID)
 		}
 	} else {

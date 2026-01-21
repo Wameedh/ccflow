@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/spf13/cobra"
+
 	"github.com/Wameedh/ccflow/internal/config"
 	"github.com/Wameedh/ccflow/internal/util"
 	"github.com/Wameedh/ccflow/internal/workspace"
-	"github.com/spf13/cobra"
 )
 
 var expandCmd = &cobra.Command{
@@ -59,7 +60,7 @@ func runExpand(cmd *cobra.Command, args []string) {
 	}, &confirm)
 
 	if !confirm {
-		fmt.Println("Expansion cancelled.")
+		fmt.Println("Expansion canceled.")
 		return
 	}
 

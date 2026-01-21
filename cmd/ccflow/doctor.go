@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/Wameedh/ccflow/internal/validator"
 	"github.com/Wameedh/ccflow/internal/workspace"
-	"github.com/spf13/cobra"
 )
 
 var doctorCmd = &cobra.Command{

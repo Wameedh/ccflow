@@ -5,9 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/Wameedh/ccflow/internal/config"
 	"github.com/Wameedh/ccflow/internal/util"
-	"gopkg.in/yaml.v3"
 )
 
 const (

@@ -3,8 +3,9 @@ package ccflow
 import (
 	"fmt"
 
-	"github.com/Wameedh/ccflow/internal/blueprint"
 	"github.com/spf13/cobra"
+
+	"github.com/Wameedh/ccflow/internal/blueprint"
 )
 
 var listBlueprintsCmd = &cobra.Command{

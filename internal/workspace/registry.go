@@ -72,8 +72,8 @@ func SaveRegistry(reg *Registry) error {
 		return err
 	}
 
-	if err := util.EnsureDir(filepath.Dir(path)); err != nil {
-		return err
+	if dirErr := util.EnsureDir(filepath.Dir(path)); dirErr != nil {
+		return dirErr
 	}
 
 	data, err := json.MarshalIndent(reg, "", "  ")
