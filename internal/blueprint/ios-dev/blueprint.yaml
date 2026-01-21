@@ -1,0 +1,53 @@
+id: ios-dev
+display_name: iOS Development
+description: Multi-repo workflow for iOS/Swift applications with optional backend services
+default_topology: multi-repo
+default_repos:
+  - name: ios-app
+    kind: swift
+  - name: api
+    kind: node
+  - name: docs
+    kind: docs
+agents:
+  defaults:
+    - product-agent
+    - architect-agent
+    - implementation-agent
+    - review-agent
+    - devops-agent
+    - ios-subagent
+    - test-subagent
+commands:
+  defaults:
+    - idea
+    - design
+    - implement
+    - review
+    - release
+    - status
+hooks:
+  defaults:
+    - post-edit
+    - end-of-turn
+hooks_manifest:
+  post-edit:
+    script: hooks/post-edit.sh
+    events:
+      - event: PostToolUse
+        commands:
+          - Write
+          - Edit
+  end-of-turn:
+    script: hooks/end-of-turn.sh
+    events:
+      - event: Stop
+mcp_suggestions:
+  vcs:
+    - github
+    - gitlab
+  tracker:
+    - linear
+    - jira
+  deploy:
+    - none

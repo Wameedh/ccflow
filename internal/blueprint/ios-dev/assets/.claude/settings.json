@@ -1,0 +1,68 @@
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "commands": ["Write", "Edit"],
+      "script": "./hooks/post-edit.sh"
+    },
+    {
+      "event": "Stop",
+      "script": "./hooks/end-of-turn.sh"
+    }
+  ],
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Edit(**)",
+      "Write(**)",
+      "Bash(swift:*)",
+      "Bash(swiftc:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(xcrun:*)",
+      "Bash(swiftformat:*)",
+      "Bash(swift-format:*)",
+      "Bash(pod:*)",
+      "Bash(fastlane:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(git:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(echo:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/*)",
+      "Bash(chmod 777 *)",
+      "Bash(curl * | bash)",
+      "Bash(*> /etc/*)",
+      "Bash(sudo *)",
+      "Bash(su *)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets.*)",
+      "Read(**/*credentials*)",
+      "Read(**/*password*)",
+      "Read(**/.aws/*)",
+      "Read(**/.ssh/*)",
+      "Read(**/Keychain/*)",
+      "Write(**/.env)",
+      "Write(**/.env.*)",
+      "Write(**/secrets.*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)"
+    ]
+  }
+}

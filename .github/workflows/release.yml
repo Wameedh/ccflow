@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  homebrew:
+    name: Update Homebrew Tap
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Checkout tap repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update formula
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          SHA256=$(curl -sL "https://github.com/${{ github.repository }}/archive/refs/tags/v${VERSION}.tar.gz" | sha256sum | cut -d ' ' -f 1)
+
+          cat > homebrew-tap/Formula/ccflow.rb << EOF
+          class Ccflow < Formula
+            desc "CLI tool for creating and managing Claude Code workflows"
+            homepage "https://github.com/${{ github.repository }}"
+            url "https://github.com/${{ github.repository }}/archive/refs/tags/v${VERSION}.tar.gz"
+            sha256 "${SHA256}"
+            license "MIT"
+
+            depends_on "go" => :build
+
+            def install
+              ldflags = %W[
+                -s -w
+                -X github.com/wameedh/ccflow/internal/config.Version=#{version}
+                -X github.com/wameedh/ccflow/internal/config.BuildTime=#{time.iso8601}
+              ]
+              system "go", "build", *std_go_args(ldflags: ldflags)
+            end
+
+            test do
+              assert_match "ccflow version", shell_output("#{bin}/ccflow version")
+            end
+          end
+          EOF
+
+      - name: Commit and push
+        working-directory: homebrew-tap
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Formula/ccflow.rb
+          git commit -m "Update ccflow to ${GITHUB_REF#refs/tags/}"
+          git push
