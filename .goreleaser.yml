@@ -1,4 +1,4 @@
-version: 2
+version: 1
 
 before:
   hooks:
@@ -48,7 +48,7 @@ changelog:
 
 release:
   github:
-    owner: wameedh
+    owner: Wameedh
     name: ccflow
   draft: false
   prerelease: auto
@@ -58,7 +58,7 @@ release:
 
     ### Homebrew (macOS/Linux)
     ```bash
-    brew install wameedh/tap/ccflow
+    brew install Wameedh/tap/ccflow
     ```
 
     ### Binary Download
@@ -72,7 +72,7 @@ release:
 brews:
   - name: ccflow
     repository:
-      owner: wameedh
+      owner: Wameedh
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     directory: Formula
