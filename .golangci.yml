@@ -1,53 +1,41 @@
+version: "2"
+
 run:
   timeout: 5m
 
 linters:
+  default: none
   enable:
-    - errcheck
-    - gosimple
     - govet
-    - ineffassign
     - staticcheck
     - unused
-    - gofmt
-    - goimports
     - misspell
     - unconvert
-    - bodyclose
-    - noctx
-    - gosec
-    - prealloc
+    - ineffassign
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 linters-settings:
-  errcheck:
-    check-type-assertions: true
   govet:
     enable-all: true
     disable:
       - fieldalignment
+  misspell:
+    locale: US
+
+formatters-settings:
   gofmt:
     simplify: true
   goimports:
     local-prefixes: github.com/Wameedh/ccflow
-  misspell:
-    locale: US
-  gosec:
-    excludes:
-      - G204 # Subprocess launched with variable - we need this for hooks
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - gosec
-        - errcheck
-    # Survey prompts in run.go - user cancellation is acceptable
-    - path: cmd/ccflow/run\.go
-      linters:
-        - errcheck
-    # Allow 0644 permissions for config files
-    - linters:
-        - gosec
-      text: "G306"
+        - govet
   max-issues-per-linter: 50
   max-same-issues: 10

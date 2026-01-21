@@ -72,14 +72,12 @@ func (g *Generator) Generate(opts GenerateOptions) (*config.WorkflowConfig, erro
 	}
 
 	// Generate the structure based on topology
-	var hubPath string
 	if opts.Topology == config.TopologyMultiRepo {
-		hubPath = filepath.Join(opts.WorkspacePath, cfg.Paths.Hub)
+		hubPath := filepath.Join(opts.WorkspacePath, cfg.Paths.Hub)
 		if err := g.generateMultiRepoStructure(opts.WorkspacePath, hubPath, cfg, bp, templateData, opts.Force); err != nil {
 			return nil, err
 		}
 	} else {
-		hubPath = opts.WorkspacePath
 		if err := g.generateSingleRepoStructure(opts.WorkspacePath, cfg, bp, templateData, opts.Force); err != nil {
 			return nil, err
 		}
