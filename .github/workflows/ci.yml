@@ -8,6 +8,8 @@ on:
 
 env:
   GOPRIVATE: github.com/Wameedh/*
+  GOPROXY: direct
+  GOFLAGS: -mod=mod
 
 jobs:
   test:
@@ -22,6 +24,16 @@ jobs:
         with:
           go-version: '1.21'
           cache: true
+
+      - name: Debug - List files
+        run: |
+          ls -la
+          ls -la cmd/ccflow/ || echo "cmd/ccflow not found"
+          cat go.mod
+          head -5 main.go
+
+      - name: Download dependencies
+        run: go mod download
 
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
