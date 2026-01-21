@@ -3,7 +3,7 @@ package util
 import (
 	"path/filepath"
 
-	"github.com/wameedh/ccflow/internal/config"
+	"github.com/Wameedh/ccflow/internal/config"
 )
 
 // DetectRepoKind attempts to detect the type of repository based on marker files

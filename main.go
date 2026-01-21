@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/wameedh/ccflow/cmd/ccflow"
+	"github.com/Wameedh/ccflow/cmd/ccflow"
 )
 
 func main() {

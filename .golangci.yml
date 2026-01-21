@@ -29,7 +29,7 @@ linters-settings:
   gofmt:
     simplify: true
   goimports:
-    local-prefixes: github.com/wameedh/ccflow
+    local-prefixes: github.com/Wameedh/ccflow
   misspell:
     locale: US
   gosec:

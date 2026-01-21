@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/wameedh/ccflow/internal/config"
-	"github.com/wameedh/ccflow/internal/util"
+	"github.com/Wameedh/ccflow/internal/config"
+	"github.com/Wameedh/ccflow/internal/util"
 	"gopkg.in/yaml.v3"
 )
 

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/wameedh/ccflow/internal/util"
+	"github.com/Wameedh/ccflow/internal/util"
 )
 
 const (

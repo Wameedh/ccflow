@@ -1,4 +1,4 @@
-module github.com/wameedh/ccflow
+module github.com/Wameedh/ccflow
 
 go 1.21
 

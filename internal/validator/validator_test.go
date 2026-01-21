@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/wameedh/ccflow/internal/config"
-	"github.com/wameedh/ccflow/internal/workspace"
+	"github.com/Wameedh/ccflow/internal/config"
+	"github.com/Wameedh/ccflow/internal/workspace"
 )
 
 func createTestWorkspace(t *testing.T) (*workspace.Workspace, string) {

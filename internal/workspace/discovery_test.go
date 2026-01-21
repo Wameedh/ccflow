@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/wameedh/ccflow/internal/config"
+	"github.com/Wameedh/ccflow/internal/config"
 )
 
 func TestDiscover_MultiRepo(t *testing.T) {

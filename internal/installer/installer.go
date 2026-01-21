@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/wameedh/ccflow/internal/config"
-	"github.com/wameedh/ccflow/internal/util"
+	"github.com/Wameedh/ccflow/internal/config"
+	"github.com/Wameedh/ccflow/internal/util"
 )
 
 // Installer handles installing .claude into repositories

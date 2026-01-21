@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/wameedh/ccflow/internal/config"
-	"github.com/wameedh/ccflow/internal/installer"
-	"github.com/wameedh/ccflow/internal/util"
-	"github.com/wameedh/ccflow/internal/workspace"
+	"github.com/Wameedh/ccflow/internal/config"
+	"github.com/Wameedh/ccflow/internal/installer"
+	"github.com/Wameedh/ccflow/internal/util"
+	"github.com/Wameedh/ccflow/internal/workspace"
 )
 
 // Validator performs health checks on a workflow

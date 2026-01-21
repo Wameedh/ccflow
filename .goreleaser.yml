@@ -19,8 +19,8 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/wameedh/ccflow/internal/config.Version={{.Version}}
-      - -X github.com/wameedh/ccflow/internal/config.BuildTime={{.Date}}
+      - -X github.com/Wameedh/ccflow/internal/config.Version={{.Version}}
+      - -X github.com/Wameedh/ccflow/internal/config.BuildTime={{.Date}}
 
 archives:
   - id: default
@@ -76,7 +76,7 @@ brews:
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     directory: Formula
-    homepage: "https://github.com/wameedh/ccflow"
+    homepage: "https://github.com/Wameedh/ccflow"
     description: "CLI tool for creating and managing Claude Code workflows"
     license: "MIT"
     install: |

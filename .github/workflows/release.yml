@@ -63,8 +63,8 @@ jobs:
             def install
               ldflags = %W[
                 -s -w
-                -X github.com/wameedh/ccflow/internal/config.Version=#{version}
-                -X github.com/wameedh/ccflow/internal/config.BuildTime=#{time.iso8601}
+                -X github.com/Wameedh/ccflow/internal/config.Version=#{version}
+                -X github.com/Wameedh/ccflow/internal/config.BuildTime=#{time.iso8601}
               ]
               system "go", "build", *std_go_args(ldflags: ldflags)
             end

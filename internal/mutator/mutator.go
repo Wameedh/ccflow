@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/wameedh/ccflow/internal/blueprint"
-	"github.com/wameedh/ccflow/internal/util"
+	"github.com/Wameedh/ccflow/internal/blueprint"
+	"github.com/Wameedh/ccflow/internal/util"
 )
 
 // Mutator handles adding agents, commands, and hooks to a workflow
