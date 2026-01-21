@@ -21,7 +21,9 @@ jobs:
           cache: true
 
       - name: Download dependencies
-        run: go mod download
+        run: |
+          go mod tidy
+          go mod download
 
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
@@ -45,6 +47,9 @@ jobs:
           go-version: '1.21'
           cache: true
 
+      - name: Tidy modules
+        run: go mod tidy
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
@@ -63,6 +68,9 @@ jobs:
         with:
           go-version: '1.21'
           cache: true
+
+      - name: Tidy modules
+        run: go mod tidy
 
       - name: Build
         run: go build -v ./...
