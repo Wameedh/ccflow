@@ -28,7 +28,8 @@ formatters:
     gofmt:
       simplify: true
     goimports:
-      local-prefixes: github.com/Wameedh/ccflow
+      local-prefixes:
+        - github.com/Wameedh/ccflow
 
 output:
   formats:
