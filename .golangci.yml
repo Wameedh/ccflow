@@ -1,6 +1,5 @@
 run:
   timeout: 5m
-  modules-download-mode: readonly
 
 linters:
   enable:
@@ -42,11 +41,10 @@ issues:
       linters:
         - gosec
         - errcheck
-    # Survey prompts - user cancellation is acceptable
+    # Survey prompts in run.go - user cancellation is acceptable
     - path: cmd/ccflow/run\.go
       linters:
         - errcheck
-      text: "survey.AskOne"
     # Allow 0644 permissions for config files
     - linters:
         - gosec
