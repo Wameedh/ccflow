@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/spf13/cobra"
 	"github.com/Wameedh/ccflow/internal/config"
 	"github.com/Wameedh/ccflow/internal/util"
 	"github.com/Wameedh/ccflow/internal/workspace"
+	"github.com/spf13/cobra"
 )
 
 var expandCmd = &cobra.Command{
@@ -124,7 +124,9 @@ func expandWorkflow(ws *workspace.Workspace) error {
 	// Remove old .ccflow directory
 	oldCcflowPath := filepath.Join(ws.Root, ".ccflow")
 	if util.DirExists(oldCcflowPath) {
-		util.RemoveAll(oldCcflowPath)
+		if err := util.RemoveAll(oldCcflowPath); err != nil {
+			return fmt.Errorf("failed to remove old .ccflow directory: %w", err)
+		}
 	}
 
 	return nil

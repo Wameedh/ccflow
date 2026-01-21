@@ -34,13 +34,13 @@ const (
 
 // AddOptions contains options for adding an artifact
 type AddOptions struct {
-	Name        string
-	Source      ContentSource
-	FilePath    string        // For SourceFile
-	Content     []byte        // For SourceStdin (pre-read)
-	Force       bool
-	BlueprintID string        // For template lookups
-	HubPath     string        // Path to .claude directory
+	Name         string
+	Source       ContentSource
+	FilePath     string // For SourceFile
+	Content      []byte // For SourceStdin (pre-read)
+	Force        bool
+	BlueprintID  string // For template lookups
+	HubPath      string // Path to .claude directory
 	TemplateData *blueprint.TemplateData
 }
 

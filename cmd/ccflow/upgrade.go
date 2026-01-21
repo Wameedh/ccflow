@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/Wameedh/ccflow/internal/blueprint"
 	"github.com/Wameedh/ccflow/internal/config"
 	"github.com/Wameedh/ccflow/internal/util"
 	"github.com/Wameedh/ccflow/internal/workspace"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -257,7 +257,7 @@ func loadManifest(ws *workspace.Workspace) *config.ManagedFilesManifest {
 	if util.FileExists(manifestPath) {
 		data, err := os.ReadFile(manifestPath)
 		if err == nil {
-			json.Unmarshal(data, manifest)
+			_ = json.Unmarshal(data, manifest) // Ignore errors, use default if invalid
 		}
 	}
 
@@ -272,5 +272,5 @@ func saveManifest(ws *workspace.Workspace, manifest *config.ManagedFilesManifest
 		return
 	}
 
-	os.WriteFile(manifestPath, data, 0644)
+	_ = os.WriteFile(manifestPath, data, 0644) // Best effort
 }

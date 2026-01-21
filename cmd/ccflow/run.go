@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/spf13/cobra"
 	"github.com/Wameedh/ccflow/internal/blueprint"
 	"github.com/Wameedh/ccflow/internal/config"
 	"github.com/Wameedh/ccflow/internal/generator"
 	"github.com/Wameedh/ccflow/internal/installer"
 	"github.com/Wameedh/ccflow/internal/util"
 	"github.com/Wameedh/ccflow/internal/workspace"
+	"github.com/spf13/cobra"
 )
 
 var runCmd = &cobra.Command{
@@ -353,7 +353,7 @@ func registerWorkflow(workspacePath string, cfg *config.WorkflowConfig) {
 	}
 
 	reg.AddOrUpdateWorkflow(entry)
-	workspace.SaveRegistry(reg)
+	_ = workspace.SaveRegistry(reg) // Best effort, non-critical
 }
 
 func printNextSteps(answers wizardAnswers, cfg *config.WorkflowConfig, bp *blueprint.Blueprint) {

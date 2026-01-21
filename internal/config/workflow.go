@@ -77,12 +77,12 @@ type MCPConfig struct {
 
 // WorkflowConfig represents the workflow.yaml configuration
 type WorkflowConfig struct {
-	Version   int         `yaml:"version" json:"version"`
-	Name      string      `yaml:"name" json:"name"`
-	Topology  Topology    `yaml:"topology" json:"topology"`
-	Blueprint string      `yaml:"blueprint" json:"blueprint"`
-	Paths     PathsConfig `yaml:"paths" json:"paths"`
-	State     StateConfig `yaml:"state" json:"state"`
+	Version   int          `yaml:"version" json:"version"`
+	Name      string       `yaml:"name" json:"name"`
+	Topology  Topology     `yaml:"topology" json:"topology"`
+	Blueprint string       `yaml:"blueprint" json:"blueprint"`
+	Paths     PathsConfig  `yaml:"paths" json:"paths"`
+	State     StateConfig  `yaml:"state" json:"state"`
 	Repos     []RepoConfig `yaml:"repos" json:"repos"`
 	Hooks     struct {
 		Enabled bool `yaml:"enabled" json:"enabled"`

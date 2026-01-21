@@ -10,19 +10,19 @@ import (
 func DetectRepoKind(repoPath string) config.RepoKind {
 	// Check for various language/framework markers
 	markers := map[string]config.RepoKind{
-		"package.json":      config.RepoKindNode,
-		"pom.xml":           config.RepoKindJava,
-		"build.gradle":      config.RepoKindJava,
-		"build.gradle.kts":  config.RepoKindJava,
-		"go.mod":            config.RepoKindGo,
-		"requirements.txt":  config.RepoKindPython,
-		"setup.py":          config.RepoKindPython,
-		"pyproject.toml":    config.RepoKindPython,
-		"Package.swift":     config.RepoKindSwift,
-		"*.xcodeproj":       config.RepoKindSwift,
-		"*.xcworkspace":     config.RepoKindSwift,
-		"main.tf":           config.RepoKindTerraform,
-		"terraform.tf":      config.RepoKindTerraform,
+		"package.json":     config.RepoKindNode,
+		"pom.xml":          config.RepoKindJava,
+		"build.gradle":     config.RepoKindJava,
+		"build.gradle.kts": config.RepoKindJava,
+		"go.mod":           config.RepoKindGo,
+		"requirements.txt": config.RepoKindPython,
+		"setup.py":         config.RepoKindPython,
+		"pyproject.toml":   config.RepoKindPython,
+		"Package.swift":    config.RepoKindSwift,
+		"*.xcodeproj":      config.RepoKindSwift,
+		"*.xcworkspace":    config.RepoKindSwift,
+		"main.tf":          config.RepoKindTerraform,
+		"terraform.tf":     config.RepoKindTerraform,
 	}
 
 	for marker, kind := range markers {

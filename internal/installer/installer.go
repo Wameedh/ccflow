@@ -28,11 +28,11 @@ const (
 
 // InstallOptions contains options for installation
 type InstallOptions struct {
-	HubPath       string           // Path to the .claude directory in the hub
+	HubPath       string              // Path to the .claude directory in the hub
 	Repos         []config.RepoConfig // Repositories to install to
-	WorkspacePath string           // Root workspace path
-	Mode          InstallMode      // Installation mode
-	Force         bool             // Force overwrite existing
+	WorkspacePath string              // Root workspace path
+	Mode          InstallMode         // Installation mode
+	Force         bool                // Force overwrite existing
 }
 
 // InstallResult represents the result of installing to a single repo

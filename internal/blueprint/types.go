@@ -2,16 +2,16 @@ package blueprint
 
 // Blueprint represents a workflow blueprint configuration
 type Blueprint struct {
-	ID              string           `yaml:"id"`
-	DisplayName     string           `yaml:"display_name"`
-	Description     string           `yaml:"description"`
-	DefaultTopology string           `yaml:"default_topology"`
-	DefaultRepos    []DefaultRepo    `yaml:"default_repos"`
-	Agents          AgentDefaults    `yaml:"agents"`
-	Commands        CommandDefaults  `yaml:"commands"`
-	Hooks           HookDefaults     `yaml:"hooks"`
-	HooksManifest   HooksManifest    `yaml:"hooks_manifest"`
-	MCPSuggestions  MCPSuggestions   `yaml:"mcp_suggestions"`
+	ID              string          `yaml:"id"`
+	DisplayName     string          `yaml:"display_name"`
+	Description     string          `yaml:"description"`
+	DefaultTopology string          `yaml:"default_topology"`
+	DefaultRepos    []DefaultRepo   `yaml:"default_repos"`
+	Agents          AgentDefaults   `yaml:"agents"`
+	Commands        CommandDefaults `yaml:"commands"`
+	Hooks           HookDefaults    `yaml:"hooks"`
+	HooksManifest   HooksManifest   `yaml:"hooks_manifest"`
+	MCPSuggestions  MCPSuggestions  `yaml:"mcp_suggestions"`
 }
 
 // DefaultRepo represents a default repository in a blueprint
@@ -40,8 +40,8 @@ type HooksManifest map[string]HookRegistration
 
 // HookRegistration defines how a hook should be registered in settings.json
 type HookRegistration struct {
-	Script string       `yaml:"script"`
-	Events []HookEvent  `yaml:"events"`
+	Script string      `yaml:"script"`
+	Events []HookEvent `yaml:"events"`
 }
 
 // HookEvent defines a single hook event configuration
