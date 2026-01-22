@@ -37,3 +37,4 @@ build/
 
 # GoReleaser
 dist/
+.claude/CLAUDE.md
