@@ -58,6 +58,7 @@ func init() {
 	rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(expandCmd)
 	rootCmd.AddCommand(removeCmd)
+	rootCmd.AddCommand(permissionsCmd)
 	rootCmd.AddCommand(versionCmd)
 }
 

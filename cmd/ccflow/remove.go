@@ -97,7 +97,7 @@ func runRemove(cmd *cobra.Command, args []string) {
 			exitWithError("prompt failed: %v", surveyErr)
 		}
 		if !confirm {
-			fmt.Println("Removal cancelled.")
+			fmt.Println("Removal canceled.")
 			return
 		}
 	}

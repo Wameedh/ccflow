@@ -75,6 +75,12 @@ type MCPConfig struct {
 	Deploy  DeployProvider  `yaml:"deploy" json:"deploy"`
 }
 
+// AgentPermission defines repository access permissions for an agent
+type AgentPermission struct {
+	Write []string `yaml:"write,omitempty" json:"write,omitempty"`
+	Read  []string `yaml:"read,omitempty" json:"read,omitempty"`
+}
+
 // WorkflowConfig represents the workflow.yaml configuration
 type WorkflowConfig struct {
 	Version   int          `yaml:"version" json:"version"`
@@ -90,7 +96,8 @@ type WorkflowConfig struct {
 	Gates struct {
 		Enabled bool `yaml:"enabled" json:"enabled"`
 	} `yaml:"gates" json:"gates"`
-	MCP MCPConfig `yaml:"mcp" json:"mcp"`
+	MCP              MCPConfig                  `yaml:"mcp" json:"mcp"`
+	AgentPermissions map[string]AgentPermission `yaml:"agent_permissions,omitempty" json:"agent_permissions,omitempty"`
 }
 
 // NewDefaultWorkflowConfig creates a new workflow config with sensible defaults
@@ -121,6 +128,7 @@ func NewDefaultWorkflowConfig(name string) *WorkflowConfig {
 			Tracker: TrackerNone,
 			Deploy:  DeployNone,
 		},
+		AgentPermissions: make(map[string]AgentPermission),
 	}
 }
 

@@ -276,5 +276,25 @@ mcp:
 `, cfg.Hooks.Enabled, cfg.Gates.Enabled,
 		cfg.MCP.VCS, cfg.MCP.Tracker, cfg.MCP.Deploy)
 
+	// Add agent permissions if configured
+	if len(cfg.AgentPermissions) > 0 {
+		yaml += "agent_permissions:\n"
+		for agentName, perm := range cfg.AgentPermissions {
+			yaml += fmt.Sprintf("  %s:\n", agentName)
+			if len(perm.Write) > 0 {
+				yaml += "    write:\n"
+				for _, repo := range perm.Write {
+					yaml += fmt.Sprintf("      - %s\n", repo)
+				}
+			}
+			if len(perm.Read) > 0 {
+				yaml += "    read:\n"
+				for _, repo := range perm.Read {
+					yaml += fmt.Sprintf("      - %s\n", repo)
+				}
+			}
+		}
+	}
+
 	return yaml
 }

@@ -20,6 +20,14 @@ type DefaultRepo struct {
 	Kind string `yaml:"kind"`
 }
 
+// RepoInfo represents a repository with permission information for template rendering
+type RepoInfo struct {
+	Name     string
+	Path     string
+	Kind     string
+	CanWrite bool
+}
+
 // AgentDefaults defines default agents for a blueprint
 type AgentDefaults struct {
 	Defaults []string `yaml:"defaults"`
@@ -69,4 +77,8 @@ type TemplateData struct {
 	Repos           []DefaultRepo
 	HooksEnabled    bool
 	GatesEnabled    bool
+	// Permission-aware repo lists for agent templates
+	AllRepos   []RepoInfo
+	WriteRepos []RepoInfo
+	ReadRepos  []RepoInfo
 }
