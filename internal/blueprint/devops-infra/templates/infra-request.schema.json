@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Infrastructure Request",
+  "description": "Schema for infrastructure request documents",
+  "type": "object",
+  "required": ["id", "title", "requester", "created_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the request",
+      "pattern": "^req-[a-z0-9-]+$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Brief title of the infrastructure request"
+    },
+    "requester": {
+      "type": "string",
+      "description": "Person or team requesting the change"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "urgency": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "How urgently this change is needed"
+    },
+    "change_type": {
+      "type": "string",
+      "enum": ["new_resource", "modify_resource", "delete_resource", "networking", "security", "scaling", "migration"],
+      "description": "Type of infrastructure change"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of what is needed"
+    },
+    "business_justification": {
+      "type": "string",
+      "description": "Why this change is needed"
+    },
+    "target_environments": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["dev", "staging", "production"]
+      },
+      "description": "Which environments this affects"
+    },
+    "estimated_resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "provider": { "type": "string" },
+          "quantity": { "type": "integer" }
+        }
+      },
+      "description": "Estimated resources needed"
+    },
+    "compliance_requirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Compliance or security requirements (SOC2, HIPAA, etc.)"
+    },
+    "rollback_plan": {
+      "type": "string",
+      "description": "How to rollback if issues occur"
+    },
+    "approval_status": {
+      "type": "string",
+      "enum": ["pending", "approved", "rejected", "needs_info"],
+      "description": "Current approval status"
+    },
+    "approver": {
+      "type": "string",
+      "description": "Person who approved the request"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

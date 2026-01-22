@@ -1,0 +1,68 @@
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "commands": ["Write", "Edit"],
+      "script": "./hooks/post-edit.sh"
+    },
+    {
+      "event": "Stop",
+      "script": "./hooks/end-of-turn.sh"
+    }
+  ],
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Edit(**)",
+      "Write(**)",
+      "Bash(go:*)",
+      "Bash(gofmt:*)",
+      "Bash(goimports:*)",
+      "Bash(golangci-lint:*)",
+      "Bash(goreleaser:*)",
+      "Bash(make:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(echo:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/*)",
+      "Bash(chmod 777 *)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | bash)",
+      "Bash(*> /etc/*)",
+      "Bash(*>> /etc/*)",
+      "Bash(sudo *)",
+      "Bash(su *)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets.*)",
+      "Read(**/*credentials*)",
+      "Read(**/*password*)",
+      "Read(**/.aws/*)",
+      "Read(**/.ssh/*)",
+      "Write(**/.env)",
+      "Write(**/.env.*)",
+      "Write(**/secrets.*)",
+      "Write(**/*credentials*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/secrets.*)"
+    ]
+  }
+}

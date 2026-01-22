@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Feature State",
+  "description": "Schema for Python data science workflow feature state files",
+  "type": "object",
+  "required": ["id", "title", "status", "created_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the feature",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Human-readable title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the feature"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ideation", "design", "design_approved", "implementation", "experimentation", "review", "approved", "released", "rollback"],
+      "description": "Current status of the feature"
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of acceptance criteria"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of feature IDs this depends on"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "design_doc": {
+      "type": "string",
+      "description": "Path to design document"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Git branch for implementation"
+    },
+    "files_changed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "version": {
+      "type": "string",
+      "description": "Release version"
+    },
+    "experiments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of experiment IDs associated with this feature"
+    },
+    "datasets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of datasets used"
+    }
+  }
+}

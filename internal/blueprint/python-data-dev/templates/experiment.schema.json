@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ML Experiment",
+  "description": "Schema for ML experiment tracking files",
+  "type": "object",
+  "required": ["id", "name", "status", "created_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the experiment",
+      "pattern": "^exp-[a-z0-9-]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for the experiment"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of what this experiment tests"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["planned", "running", "completed", "failed", "abandoned"],
+      "description": "Current status of the experiment"
+    },
+    "hypothesis": {
+      "type": "string",
+      "description": "The hypothesis being tested"
+    },
+    "feature_id": {
+      "type": "string",
+      "description": "Associated feature ID"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Hyperparameters and configuration",
+      "additionalProperties": true
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Evaluation metrics",
+      "properties": {
+        "accuracy": { "type": "number" },
+        "precision": { "type": "number" },
+        "recall": { "type": "number" },
+        "f1_score": { "type": "number" },
+        "loss": { "type": "number" },
+        "auc": { "type": "number" },
+        "mae": { "type": "number" },
+        "mse": { "type": "number" },
+        "rmse": { "type": "number" },
+        "r2": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "dataset": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "train_size": { "type": "integer" },
+        "test_size": { "type": "integer" },
+        "validation_size": { "type": "integer" }
+      }
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "framework": { "type": "string" },
+        "architecture": { "type": "string" },
+        "artifact_path": { "type": "string" }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "type": { "type": "string" }
+        }
+      },
+      "description": "List of artifacts (models, plots, etc.)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes and observations"
+    },
+    "conclusion": {
+      "type": "string",
+      "description": "Conclusion from the experiment"
+    },
+    "next_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Recommended next steps based on results"
+    }
+  }
+}

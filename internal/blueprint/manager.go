@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed all:web-dev all:ios-dev
+//go:embed all:web-dev all:ios-dev all:go-cli-dev all:python-data-dev all:devops-infra
 var blueprintsFS embed.FS
 
 // Manager provides access to embedded blueprints

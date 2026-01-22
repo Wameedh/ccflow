@@ -1,0 +1,51 @@
+id: python-data-dev
+display_name: Python Data Science
+description: Single-repo workflow for data science, ML, and Jupyter notebooks with experiment tracking
+default_topology: single-repo
+default_repos:
+  - name: data
+    kind: python
+agents:
+  defaults:
+    - product-agent
+    - architect-agent
+    - implementation-agent
+    - review-agent
+    - devops-agent
+    - data-subagent
+    - ml-subagent
+    - test-subagent
+commands:
+  defaults:
+    - idea
+    - design
+    - implement
+    - review
+    - release
+    - status
+    - experiment
+hooks:
+  defaults:
+    - post-edit
+    - end-of-turn
+hooks_manifest:
+  post-edit:
+    script: hooks/post-edit.sh
+    events:
+      - event: PostToolUse
+        commands:
+          - Write
+          - Edit
+  end-of-turn:
+    script: hooks/end-of-turn.sh
+    events:
+      - event: Stop
+mcp_suggestions:
+  vcs:
+    - github
+    - gitlab
+  tracker:
+    - linear
+    - jira
+  deploy:
+    - none
