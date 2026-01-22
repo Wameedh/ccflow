@@ -70,6 +70,21 @@ ccflow doctor
 
 # List registered workflows
 ccflow list
+
+# Remove a workflow (from within project directory)
+ccflow remove
+
+# Remove a workflow by name (from anywhere)
+ccflow remove my-project
+
+# Preview what would be removed
+ccflow remove --dry-run
+
+# Remove without confirmation
+ccflow remove --force
+
+# Keep the docs/workflow directory
+ccflow remove --keep-docs
 ```
 
 ### Adding Components

@@ -57,6 +57,7 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(expandCmd)
+	rootCmd.AddCommand(removeCmd)
 	rootCmd.AddCommand(versionCmd)
 }
 

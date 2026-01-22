@@ -1,5 +1,5 @@
 # Binaries
-ccflow
+/ccflow
 *.exe
 *.exe~
 *.dll
