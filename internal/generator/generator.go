@@ -32,6 +32,8 @@ type GenerateOptions struct {
 	GatesEnabled  bool
 	VCS           config.VCSProvider
 	Tracker       config.TrackerProvider
+	Transitions   config.TransitionsConfig
+	Parallel      config.ParallelConfig
 	Force         bool
 }
 
@@ -110,6 +112,8 @@ func (g *Generator) Generate(opts GenerateOptions) (*config.WorkflowConfig, erro
 	cfg.Gates.Enabled = opts.GatesEnabled
 	cfg.MCP.VCS = opts.VCS
 	cfg.MCP.Tracker = opts.Tracker
+	cfg.Transitions = opts.Transitions
+	cfg.Parallel = opts.Parallel
 
 	// Adjust paths based on topology
 	if opts.Topology == config.TopologySingleRepo {
@@ -344,8 +348,37 @@ mcp:
   vcs: %s
   tracker: %s
   deploy: %s
+transitions:
+  idea_to_design:
+    mode: %s
+  design_to_implement:
+    mode: %s
+  implement_to_review:
+    mode: %s
+  review_to_release:
+    mode: %s
+parallel:
+  enabled: %t
+  sync_gate: %s
 `, cfg.Hooks.Enabled, cfg.Gates.Enabled,
-		cfg.MCP.VCS, cfg.MCP.Tracker, cfg.MCP.Deploy)
+		cfg.MCP.VCS, cfg.MCP.Tracker, cfg.MCP.Deploy,
+		cfg.Transitions.IdeaToDesign.Mode,
+		cfg.Transitions.DesignToImplement.Mode,
+		cfg.Transitions.ImplementToReview.Mode,
+		cfg.Transitions.ReviewToRelease.Mode,
+		cfg.Parallel.Enabled, cfg.Parallel.SyncGate)
+
+	// Add parallel groups if configured
+	if len(cfg.Parallel.Groups) > 0 {
+		yaml += "  groups:\n"
+		for _, group := range cfg.Parallel.Groups {
+			yaml += fmt.Sprintf("    - name: %s\n      agents:\n", group.Name)
+			for _, agent := range group.Agents {
+				yaml += fmt.Sprintf("        - %s\n", agent)
+			}
+			yaml += fmt.Sprintf("      sync: %s\n", group.Sync)
+		}
+	}
 
 	// Add agent permissions if configured
 	if len(cfg.AgentPermissions) > 0 {

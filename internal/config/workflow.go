@@ -48,6 +48,42 @@ const (
 	DeployNone   DeployProvider = "none"
 )
 
+// TransitionMode defines how phase transitions behave
+type TransitionMode string
+
+const (
+	TransitionAuto   TransitionMode = "auto"   // Immediately invoke next command
+	TransitionPrompt TransitionMode = "prompt" // Ask user before proceeding
+	TransitionManual TransitionMode = "manual" // Just print suggestion
+)
+
+// TransitionConfig defines a single phase transition
+type TransitionConfig struct {
+	Mode TransitionMode `yaml:"mode" json:"mode"`
+}
+
+// TransitionsConfig defines all workflow transitions
+type TransitionsConfig struct {
+	IdeaToDesign      TransitionConfig `yaml:"idea_to_design" json:"idea_to_design"`
+	DesignToImplement TransitionConfig `yaml:"design_to_implement" json:"design_to_implement"`
+	ImplementToReview TransitionConfig `yaml:"implement_to_review" json:"implement_to_review"`
+	ReviewToRelease   TransitionConfig `yaml:"review_to_release" json:"review_to_release"`
+}
+
+// ParallelGroup defines a group of agents that run in parallel
+type ParallelGroup struct {
+	Name   string   `yaml:"name" json:"name"`
+	Agents []string `yaml:"agents" json:"agents"`
+	Sync   string   `yaml:"sync" json:"sync"` // "all" or "any"
+}
+
+// ParallelConfig defines parallel execution settings
+type ParallelConfig struct {
+	Enabled  bool            `yaml:"enabled" json:"enabled"`
+	SyncGate string          `yaml:"sync_gate" json:"sync_gate"`
+	Groups   []ParallelGroup `yaml:"groups,omitempty" json:"groups,omitempty"`
+}
+
 // RepoConfig represents a repository in the workflow
 type RepoConfig struct {
 	Name string   `yaml:"name" json:"name"`
@@ -98,6 +134,8 @@ type WorkflowConfig struct {
 	} `yaml:"gates" json:"gates"`
 	MCP              MCPConfig                  `yaml:"mcp" json:"mcp"`
 	AgentPermissions map[string]AgentPermission `yaml:"agent_permissions,omitempty" json:"agent_permissions,omitempty"`
+	Transitions      TransitionsConfig          `yaml:"transitions" json:"transitions"`
+	Parallel         ParallelConfig             `yaml:"parallel" json:"parallel"`
 }
 
 // NewDefaultWorkflowConfig creates a new workflow config with sensible defaults
@@ -129,6 +167,17 @@ func NewDefaultWorkflowConfig(name string) *WorkflowConfig {
 			Deploy:  DeployNone,
 		},
 		AgentPermissions: make(map[string]AgentPermission),
+		Transitions: TransitionsConfig{
+			IdeaToDesign:      TransitionConfig{Mode: TransitionPrompt},
+			DesignToImplement: TransitionConfig{Mode: TransitionPrompt},
+			ImplementToReview: TransitionConfig{Mode: TransitionPrompt},
+			ReviewToRelease:   TransitionConfig{Mode: TransitionPrompt},
+		},
+		Parallel: ParallelConfig{
+			Enabled:  false,
+			SyncGate: "all",
+			Groups:   nil,
+		},
 	}
 }
 

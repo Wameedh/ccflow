@@ -101,9 +101,37 @@ Only after user confirms in Step 4, create `{{.DocsStateDir}}/<feature-id>.json`
 
 ---
 
-## Step 6: Output Summary and Next Steps
+## Step 6: Output Summary and Handoff
 
 Print:
 - Confirmation that the idea has been captured
 - The file path where it was saved
-- Suggested next step: `/design <feature-id>`
+
+---
+
+## Phase Completion & Handoff
+
+**CRITICAL: You must follow the configured transition behavior.**
+
+After completing this phase successfully:
+
+1. **Read the workflow configuration** from `.ccflow/workflow.yaml` or `workflow-hub/workflow.yaml`
+2. **Check the `transitions.idea_to_design.mode` value**
+3. **Follow the corresponding behavior:**
+
+### If mode is "auto":
+- DO NOT just print "Next step: /design"
+- IMMEDIATELY invoke the next command using the Skill tool:
+  ```
+  Skill(skill="design", args="<feature-id>")
+  ```
+
+### If mode is "prompt":
+- Ask the user: "Ready to proceed to /design <feature-id>?"
+- Use AskUserQuestion with options: ["Yes, proceed", "No, I'll do it later"]
+- If "Yes": invoke `Skill(skill="design", args="<feature-id>")`
+- If "No": print "Run /design <feature-id> when ready."
+
+### If mode is "manual":
+- Print: "Next step: /design <feature-id>"
+- Do not invoke automatically

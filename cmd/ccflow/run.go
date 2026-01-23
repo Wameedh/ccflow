@@ -44,6 +44,8 @@ type wizardAnswers struct {
 	gatesEnabled  bool
 	vcs           config.VCSProvider
 	tracker       config.TrackerProvider
+	transitions   config.TransitionsConfig
+	parallel      config.ParallelConfig
 }
 
 func runWorkflow(cmd *cobra.Command, args []string) {
@@ -92,6 +94,8 @@ func runWorkflow(cmd *cobra.Command, args []string) {
 		GatesEnabled:  answers.gatesEnabled,
 		VCS:           answers.vcs,
 		Tracker:       answers.tracker,
+		Transitions:   answers.transitions,
+		Parallel:      answers.parallel,
 		Force:         forceFlag,
 	}
 
@@ -258,6 +262,8 @@ func runQuickSetup(bp *blueprint.Blueprint) wizardAnswers {
 	fmt.Println("    - Single repository mode")
 	fmt.Println("    - Auto-formatting enabled")
 	fmt.Println("    - Review checkpoints enabled")
+	fmt.Println("    - Phase transitions: Ask before proceeding")
+	fmt.Println("    - Parallel execution: Disabled")
 	fmt.Println("    - GitHub integration")
 	fmt.Println()
 
@@ -270,6 +276,16 @@ func runQuickSetup(bp *blueprint.Blueprint) wizardAnswers {
 		gatesEnabled:  true,
 		vcs:           config.VCSGitHub,
 		tracker:       config.TrackerNone,
+		transitions: config.TransitionsConfig{
+			IdeaToDesign:      config.TransitionConfig{Mode: config.TransitionPrompt},
+			DesignToImplement: config.TransitionConfig{Mode: config.TransitionPrompt},
+			ImplementToReview: config.TransitionConfig{Mode: config.TransitionPrompt},
+			ReviewToRelease:   config.TransitionConfig{Mode: config.TransitionPrompt},
+		},
+		parallel: config.ParallelConfig{
+			Enabled:  false,
+			SyncGate: "all",
+		},
 	}
 }
 
@@ -422,6 +438,24 @@ shared libraries). The AI workflow can work across all repos with shared context
 		answers.tracker = config.TrackerNone
 	}
 
+	// === WORKFLOW TRANSITIONS SECTION ===
+	printSectionHeader("WORKFLOW TRANSITIONS", "Configure how phases hand off to each other")
+
+	fmt.Println("  When one phase completes, the AI can automatically start the next")
+	fmt.Println("  phase, ask you first, or just suggest what to do next.")
+	fmt.Println()
+
+	answers.transitions = promptTransitions()
+
+	// === PARALLEL EXECUTION SECTION ===
+	printSectionHeader("PARALLEL EXECUTION", "Run multiple agents simultaneously")
+
+	fmt.Println("  For larger projects, multiple agents can work in parallel")
+	fmt.Println("  (e.g., backend and frontend agents implementing together).")
+	fmt.Println()
+
+	answers.parallel = promptParallelConfig()
+
 	return answers
 }
 
@@ -570,6 +604,118 @@ func configureNewRepos(bp *blueprint.Blueprint) []config.RepoConfig {
 	return repos
 }
 
+// describeTransitionMode returns a human-readable description of the transition config
+func describeTransitionMode(t config.TransitionsConfig) string {
+	// Check if all transitions are the same mode
+	modes := []config.TransitionMode{
+		t.IdeaToDesign.Mode,
+		t.DesignToImplement.Mode,
+		t.ImplementToReview.Mode,
+		t.ReviewToRelease.Mode,
+	}
+
+	allSame := true
+	for _, m := range modes[1:] {
+		if m != modes[0] {
+			allSame = false
+			break
+		}
+	}
+
+	if allSame {
+		switch modes[0] {
+		case config.TransitionAuto:
+			return "Automatic (all phases)"
+		case config.TransitionPrompt:
+			return "Ask before proceeding (all phases)"
+		case config.TransitionManual:
+			return "Manual (all phases)"
+		}
+	}
+
+	return "Mixed (custom per phase)"
+}
+
+// promptTransitions prompts user to configure workflow transitions
+func promptTransitions() config.TransitionsConfig {
+	transitions := config.TransitionsConfig{}
+
+	phaseTransitions := []struct {
+		field *config.TransitionConfig
+		from  string
+		to    string
+	}{
+		{&transitions.IdeaToDesign, "/idea", "/design"},
+		{&transitions.DesignToImplement, "/design", "/implement"},
+		{&transitions.ImplementToReview, "/implement", "/review"},
+		{&transitions.ReviewToRelease, "/review", "/release"},
+	}
+
+	for _, pt := range phaseTransitions {
+		var mode string
+		survey.AskOne(&survey.Select{
+			Message: fmt.Sprintf("%s → %s:", pt.from, pt.to),
+			Options: []string{
+				"Ask me first (recommended)",
+				"Automatic (proceed immediately)",
+				"Manual (I'll run the command myself)",
+			},
+			Default: "Ask me first (recommended)",
+		}, &mode)
+
+		switch {
+		case strings.Contains(mode, "Automatic"):
+			pt.field.Mode = config.TransitionAuto
+		case strings.Contains(mode, "Manual"):
+			pt.field.Mode = config.TransitionManual
+		default:
+			pt.field.Mode = config.TransitionPrompt
+		}
+	}
+
+	return transitions
+}
+
+// promptParallelConfig prompts user to configure parallel execution
+func promptParallelConfig() config.ParallelConfig {
+	parallel := config.ParallelConfig{
+		Enabled:  false,
+		SyncGate: "all",
+	}
+
+	var enableParallel bool
+	survey.AskOne(&survey.Confirm{
+		Message: "Enable parallel agent execution?",
+		Default: false,
+		Help:    "Allow multiple agents to work simultaneously on different parts of the feature",
+	}, &enableParallel)
+	parallel.Enabled = enableParallel
+
+	if enableParallel {
+		var syncMode string
+		survey.AskOne(&survey.Select{
+			Message: "Default sync behavior:",
+			Options: []string{
+				"Wait for all agents to complete before next phase (recommended)",
+				"Let each agent proceed independently",
+			},
+			Default: "Wait for all agents to complete before next phase (recommended)",
+		}, &syncMode)
+
+		if strings.Contains(syncMode, "independently") {
+			parallel.SyncGate = "any"
+		} else {
+			parallel.SyncGate = "all"
+		}
+
+		fmt.Println()
+		fmt.Println("  You can define parallel groups in workflow.yaml later.")
+		fmt.Println("  Example: backend-agent and frontend-agent working together.")
+	}
+
+	return parallel
+}
+
 func registerWorkflow(workspacePath string, cfg *config.WorkflowConfig) {
 	reg, err := workspace.LoadRegistry()
 	if err != nil {
@@ -623,14 +769,20 @@ func printWorkflowSummary(answers wizardAnswers, cfg *config.WorkflowConfig, bp 
 	fmt.Println("  Enabled Features")
 	fmt.Println("  " + strings.Repeat("─", 70))
 	if answers.hooksEnabled {
-		fmt.Println("    [x] Auto-formatting  - Code is automatically formatted and validated")
+		fmt.Println("    [x] Auto-formatting    - Code is automatically formatted and validated")
 	} else {
-		fmt.Println("    [ ] Auto-formatting  - Disabled (you'll format code manually)")
+		fmt.Println("    [ ] Auto-formatting    - Disabled (you'll format code manually)")
 	}
 	if answers.gatesEnabled {
 		fmt.Println("    [x] Review checkpoints - AI pauses for your approval at key moments")
 	} else {
 		fmt.Println("    [ ] Review checkpoints - Disabled (AI works without pausing)")
+	}
+	fmt.Printf("    [x] Phase transitions  - %s\n", describeTransitionMode(answers.transitions))
+	if answers.parallel.Enabled {
+		fmt.Printf("    [x] Parallel agents    - Enabled (sync: %s)\n", answers.parallel.SyncGate)
+	} else {
+		fmt.Println("    [ ] Parallel agents    - Disabled (agents run sequentially)")
 	}
 	fmt.Println()
 

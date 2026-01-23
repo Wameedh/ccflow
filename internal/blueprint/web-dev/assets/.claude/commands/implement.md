@@ -8,6 +8,41 @@ Implement code changes according to an approved design.
 /implement [feature-id]
 ```
 
+## CRITICAL: Question Protocol
+
+**YOU MUST FOLLOW THIS PROTOCOL - VIOLATIONS BREAK THE WORKFLOW**
+
+### Before Starting Any Work
+
+1. Read the state file for this feature
+2. Check if `pending_questions` array exists with any `answered: false` items
+3. If yes: Use AskUserQuestion tool for EACH unanswered question, then STOP
+4. If no: Proceed with the command
+
+### When You Need User Input
+
+1. **STOP** all other work immediately
+2. **DO NOT** write code, create files, or make decisions without user input
+3. **USE** the AskUserQuestion tool (this blocks until user responds):
+
+```
+AskUserQuestion(questions=[{
+  "question": "Your question here?",
+  "header": "Short Label",
+  "options": [
+    {"label": "Option 1", "description": "What this means"},
+    {"label": "Option 2", "description": "What this means"}
+  ],
+  "multiSelect": false
+}])
+```
+
+4. **WAIT** for the response before ANY further action
+5. **UPDATE** the state file with the answer
+6. **THEN** continue with the workflow
+
+---
+
 ## What This Command Does
 
 1. **Loads Design**: Reads design doc from `{{.DocsDesignDir}}/`
@@ -81,3 +116,32 @@ For each change:
 - Keep backward compatibility unless design specifies otherwise
 - Don't commit secrets or credentials
 - Update documentation as needed
+
+---
+
+## Phase Completion & Handoff
+
+**CRITICAL: You must follow the configured transition behavior.**
+
+After completing this phase successfully:
+
+1. **Read the workflow configuration** from `.ccflow/workflow.yaml` or `workflow-hub/workflow.yaml`
+2. **Check the `transitions.implement_to_review.mode` value**
+3. **Follow the corresponding behavior:**
+
+### If mode is "auto":
+- DO NOT just print "Next step: /review"
+- IMMEDIATELY invoke the next command using the Skill tool:
+  ```
+  Skill(skill="review", args="<feature-id>")
+  ```
+
+### If mode is "prompt":
+- Ask the user: "Ready to proceed to /review <feature-id>?"
+- Use AskUserQuestion with options: ["Yes, proceed", "No, I'll do it later"]
+- If "Yes": invoke `Skill(skill="review", args="<feature-id>")`
+- If "No": print "Run /review <feature-id> when ready."
+
+### If mode is "manual":
+- Print: "Next step: /review <feature-id>"
+- Do not invoke automatically

@@ -8,6 +8,28 @@ Implement Terraform and Kubernetes configurations according to approved design.
 /implement [feature-id]
 ```
 
+## CRITICAL: Question Protocol
+
+**YOU MUST FOLLOW THIS PROTOCOL - VIOLATIONS BREAK THE WORKFLOW**
+
+### Before Starting Any Work
+
+1. Read the state file for this feature
+2. Check if `pending_questions` array exists with any `answered: false` items
+3. If yes: Use AskUserQuestion tool for EACH unanswered question, then STOP
+4. If no: Proceed with the command
+
+### When You Need User Input
+
+1. **STOP** all other work immediately
+2. **DO NOT** write code, create files, or make decisions without user input
+3. **USE** the AskUserQuestion tool (this blocks until user responds)
+4. **WAIT** for the response before ANY further action
+5. **UPDATE** the state file with the answer
+6. **THEN** continue with the workflow
+
+---
+
 ## What This Command Does
 
 1. **Loads Design**: Reads design doc from `{{.DocsDesignDir}}/`
@@ -125,3 +147,26 @@ terraform show {{.DocsStateDir}}/<feature-id>.tfplan
 - Document all resources with descriptions
 - Tag all resources appropriately
 - Follow existing patterns in the codebase
+
+---
+
+## Phase Completion & Handoff
+
+**CRITICAL: You must follow the configured transition behavior.**
+
+After completing this phase successfully:
+
+1. **Read the workflow configuration** from `.ccflow/workflow.yaml` or `workflow-hub/workflow.yaml`
+2. **Check the `transitions.implement_to_review.mode` value**
+3. **Follow the corresponding behavior:**
+
+### If mode is "auto":
+- IMMEDIATELY invoke: `Skill(skill="review", args="<feature-id>")`
+
+### If mode is "prompt":
+- Ask the user: "Ready to proceed to /review <feature-id>?"
+- If "Yes": invoke `Skill(skill="review", args="<feature-id>")`
+- If "No": print "Run /review <feature-id> when ready."
+
+### If mode is "manual":
+- Print: "Next step: /review <feature-id>"
