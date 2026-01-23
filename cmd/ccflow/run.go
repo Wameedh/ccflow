@@ -35,12 +35,29 @@ Examples:
 	Run:  runWorkflow,
 }
 
+type wizardAnswers struct {
+	workflowName  string
+	workspacePath string
+	topology      config.Topology
+	repos         []config.RepoConfig
+	hooksEnabled  bool
+	gatesEnabled  bool
+	vcs           config.VCSProvider
+	tracker       config.TrackerProvider
+}
+
 func runWorkflow(cmd *cobra.Command, args []string) {
 	// Initialize blueprint manager
 	bpManager, err := blueprint.NewManager()
 	if err != nil {
 		exitWithError("failed to initialize blueprints: %v", err)
 	}
+
+	// Show welcome message
+	printWelcome()
+
+	// Determine setup mode (quick vs custom)
+	setupMode := promptSetupMode()
 
 	// Determine blueprint
 	var blueprintID string
@@ -50,13 +67,18 @@ func runWorkflow(cmd *cobra.Command, args []string) {
 			exitWithError("unknown blueprint: %s\nRun 'ccflow list-blueprints' to see available blueprints", blueprintID)
 		}
 	} else {
-		blueprintID = promptBlueprintSelection(bpManager)
+		blueprintID = promptBlueprintSection(bpManager)
 	}
 
 	bp, _ := bpManager.Get(blueprintID)
 
-	// Run wizard prompts
-	answers := runWizard(bp)
+	// Run wizard prompts based on setup mode
+	var answers wizardAnswers
+	if setupMode == "quick" {
+		answers = runQuickSetup(bp)
+	} else {
+		answers = runCustomSetup(bp)
+	}
 
 	// Generate workflow
 	gen := generator.New(bpManager)
@@ -81,14 +103,13 @@ func runWorkflow(cmd *cobra.Command, args []string) {
 		}
 
 		if len(existingFiles) > 0 {
-			fmt.Printf("\n%d file(s) already exist:\n", len(existingFiles))
+			fmt.Printf("\n  %d file(s) already exist:\n", len(existingFiles))
 			for _, f := range existingFiles {
-				// Show relative path if possible
 				relPath, relErr := filepath.Rel(answers.workspacePath, f)
 				if relErr != nil {
 					relPath = f
 				}
-				fmt.Printf("  - %s\n", relPath)
+				fmt.Printf("    - %s\n", relPath)
 			}
 
 			var overwrite bool
@@ -98,15 +119,14 @@ func runWorkflow(cmd *cobra.Command, args []string) {
 			}, &overwrite)
 
 			if promptErr != nil {
-				// If prompt fails (non-interactive), require --force flag
 				exitWithError("files already exist. Use --force to overwrite, or run interactively to confirm")
 			}
 
 			if !overwrite {
-				fmt.Println("\nAborted. No files were modified.")
+				fmt.Println("\n  Aborted. No files were modified.")
 				return
 			}
-			fmt.Println("\nOverwriting existing files...")
+			fmt.Println("\n  Overwriting existing files...")
 			opts.Force = true
 		}
 	}
@@ -129,16 +149,16 @@ func runWorkflow(cmd *cobra.Command, args []string) {
 			Force:         opts.Force,
 		})
 
-		fmt.Println("\nInstalling .claude to repositories:")
+		fmt.Println("\n  Linking workflow to repositories:")
 		for _, r := range results {
 			if r.Success {
 				if r.Skipped {
-					printInfo("%s: %s", r.RepoName, r.Message)
+					printInfo("  %s: %s", r.RepoName, r.Message)
 				} else {
-					printSuccess("%s: %s", r.RepoName, r.Message)
+					printSuccess("  %s: %s", r.RepoName, r.Message)
 				}
 			} else {
-				printWarning("%s: %v", r.RepoName, r.Error)
+				printWarning("  %s: %v", r.RepoName, r.Error)
 			}
 		}
 	}
@@ -146,22 +166,115 @@ func runWorkflow(cmd *cobra.Command, args []string) {
 	// Register workflow in global registry
 	registerWorkflow(answers.workspacePath, cfg)
 
-	// Print success and next steps
-	printNextSteps(answers, cfg, bp)
+	// Print success summary with workflow diagram
+	printWorkflowSummary(answers, cfg, bp)
 }
 
-type wizardAnswers struct {
-	workflowName  string
-	workspacePath string
-	topology      config.Topology
-	repos         []config.RepoConfig
-	hooksEnabled  bool
-	gatesEnabled  bool
-	vcs           config.VCSProvider
-	tracker       config.TrackerProvider
+// printWelcome displays the welcome message
+func printWelcome() {
+	fmt.Println()
+	fmt.Println("  Welcome to ccflow!")
+	fmt.Println()
+	fmt.Println("  This wizard sets up an AI-assisted development workflow")
+	fmt.Println("  for your project using Claude Code.")
+	fmt.Println()
 }
 
-func runWizard(bp *blueprint.Blueprint) wizardAnswers {
+// promptSetupMode asks user to choose between quick and custom setup
+func promptSetupMode() string {
+	var mode string
+	survey.AskOne(&survey.Select{
+		Message: "How would you like to set up your workflow?",
+		Options: []string{
+			"Quick setup (recommended) - Use smart defaults, get started fast",
+			"Custom setup - Configure each option yourself",
+		},
+		Default: "Quick setup (recommended) - Use smart defaults, get started fast",
+	}, &mode)
+
+	if strings.Contains(mode, "Quick") {
+		return "quick"
+	}
+	return "custom"
+}
+
+// promptBlueprintSection displays the project type selection with full details
+func promptBlueprintSection(bpManager *blueprint.Manager) string {
+	printSectionHeader("PROJECT TYPE", "Choose a template that matches your project")
+
+	blueprints := bpManager.List()
+
+	// Build rich options with full agent list
+	options := make([]string, len(blueprints))
+	bpIDs := make([]string, len(blueprints))
+
+	for i, bp := range blueprints {
+		bpIDs[i] = bp.ID
+
+		// Format commands list
+		commands := formatList(bp.Commands.Defaults, "/")
+
+		// Format agents list (full list as requested)
+		agents := formatAgentList(bp.Agents.Defaults)
+
+		options[i] = fmt.Sprintf("%s\n    %s\n    Commands: %s\n    Agents:   %s",
+			bp.DisplayName,
+			bp.Description,
+			commands,
+			agents,
+		)
+	}
+
+	var selection string
+	survey.AskOne(&survey.Select{
+		Message: "What type of project are you building?",
+		Options: options,
+	}, &selection)
+
+	// Find matching blueprint ID
+	for i, opt := range options {
+		if opt == selection {
+			return bpIDs[i]
+		}
+	}
+
+	// Fallback: extract from display name
+	for i, bp := range blueprints {
+		if strings.HasPrefix(selection, bp.DisplayName) {
+			return bpIDs[i]
+		}
+	}
+
+	return blueprints[0].ID
+}
+
+// runQuickSetup returns sensible defaults without prompting
+func runQuickSetup(bp *blueprint.Blueprint) wizardAnswers {
+	cwd, _ := os.Getwd()
+
+	fmt.Println()
+	fmt.Println("  Using quick setup with these defaults:")
+	fmt.Printf("    - Workflow name: %s\n", filepath.Base(cwd))
+	fmt.Println("    - Single repository mode")
+	fmt.Println("    - Auto-formatting enabled")
+	fmt.Println("    - Review checkpoints enabled")
+	fmt.Println("    - GitHub integration")
+	fmt.Println()
+
+	return wizardAnswers{
+		workflowName:  filepath.Base(cwd),
+		workspacePath: cwd,
+		topology:      config.TopologySingleRepo,
+		repos:         nil,
+		hooksEnabled:  true,
+		gatesEnabled:  true,
+		vcs:           config.VCSGitHub,
+		tracker:       config.TrackerNone,
+	}
+}
+
+// runCustomSetup runs the full interactive wizard
+func runCustomSetup(bp *blueprint.Blueprint) wizardAnswers {
 	answers := wizardAnswers{
 		hooksEnabled: true,
 		gatesEnabled: true,
@@ -170,97 +283,140 @@ func runWizard(bp *blueprint.Blueprint) wizardAnswers {
 	// Get current directory
 	cwd, _ := os.Getwd()
 
+	// === PROJECT SETUP SECTION ===
+	printSectionHeader("PROJECT SETUP", "Basic information about your project")
+
 	// Workflow name
-	workflowNamePrompt := &survey.Input{
-		Message: "Workflow name:",
+	survey.AskOne(&survey.Input{
+		Message: "What should we call this workflow?",
 		Default: filepath.Base(cwd),
-	}
-	survey.AskOne(workflowNamePrompt, &answers.workflowName)
+		Help:    "This name identifies your workflow in ccflow commands (e.g., ccflow status)",
+	}, &answers.workflowName)
 
 	// Workspace path
-	workspacePathPrompt := &survey.Input{
-		Message: "Workspace path:",
+	survey.AskOne(&survey.Input{
+		Message: "Where is your project located?",
 		Default: cwd,
-	}
-	survey.AskOne(workspacePathPrompt, &answers.workspacePath)
+		Help:    "The root directory containing your code",
+	}, &answers.workspacePath)
 	answers.workspacePath, _ = filepath.Abs(answers.workspacePath)
 
-	// Mode
-	var mode string
-	modePrompt := &survey.Select{
-		Message: "Setup mode:",
-		Options: []string{"Use existing repositories", "Generate new repositories"},
-		Default: "Use existing repositories",
-	}
-	survey.AskOne(modePrompt, &mode)
-	useExisting := mode == "Use existing repositories"
+	// === PROJECT STRUCTURE SECTION ===
+	printSectionHeader("PROJECT STRUCTURE", "How your code is organized")
 
-	// Topology
-	var topologyStr string
-	topologyPrompt := &survey.Select{
-		Message: "Topology:",
-		Options: []string{"Multi-repo (recommended)", "Single-repo"},
-		Default: "Multi-repo (recommended)",
-	}
-	survey.AskOne(topologyPrompt, &topologyStr)
-	if strings.Contains(topologyStr, "Multi") {
+	// Repository mode (replaces confusing "topology" and "setup mode")
+	var repoMode string
+	survey.AskOne(&survey.Select{
+		Message: "How is your code organized?",
+		Options: []string{
+			"Single repository - All code in one place (simpler setup)",
+			"Multiple repositories - Separate repos that work together",
+		},
+		Default: "Single repository - All code in one place (simpler setup)",
+		Help: `Single repository: Best for most projects. All your code lives in one git repo.
+
+Multiple repositories: For teams with separate repos (e.g., frontend, backend,
+shared libraries). The AI workflow can work across all repos with shared context.`,
+	}, &repoMode)
+
+	if strings.Contains(repoMode, "Multiple") {
 		answers.topology = config.TopologyMultiRepo
-	} else {
-		answers.topology = config.TopologySingleRepo
-	}
 
-	// Repos
-	if answers.topology == config.TopologyMultiRepo {
-		if useExisting {
+		// Ask about existing vs new repos
+		var existingMode string
+		survey.AskOne(&survey.Select{
+			Message: "Do you have existing repositories to connect?",
+			Options: []string{
+				"Yes, connect existing repositories",
+				"No, I'll set up repositories later",
+			},
+			Default: "Yes, connect existing repositories",
+		}, &existingMode)
+
+		if strings.Contains(existingMode, "Yes") {
 			answers.repos = selectExistingRepos(answers.workspacePath)
 		} else {
 			answers.repos = configureNewRepos(bp)
 		}
+	} else {
+		answers.topology = config.TopologySingleRepo
 	}
 
-	// Hooks
-	var enableHooks bool
-	survey.AskOne(&survey.Confirm{
-		Message: "Enable hooks (formatting, validation)?",
-		Default: true,
-	}, &enableHooks)
-	answers.hooksEnabled = enableHooks
+	// === AUTOMATION SECTION ===
+	printSectionHeader("AUTOMATION", "Configure automatic code quality features")
 
-	// Gates
-	var enableGates bool
-	survey.AskOne(&survey.Confirm{
-		Message: "Enable quality gates?",
-		Default: true,
-	}, &enableGates)
-	answers.gatesEnabled = enableGates
+	// Hooks (renamed to "Auto-formatting")
+	fmt.Println("  Auto-formatting automatically formats and validates code after the AI")
+	fmt.Println("  writes it, ensuring consistent style and catching errors early.")
+	fmt.Println()
 
-	// VCS (for MCP guidance)
+	var enableFormatting bool
+	survey.AskOne(&survey.Confirm{
+		Message: "Enable automatic code formatting?",
+		Default: true,
+	}, &enableFormatting)
+	answers.hooksEnabled = enableFormatting
+
+	// Gates (renamed to "Review checkpoints")
+	fmt.Println()
+	fmt.Println("  Review checkpoints pause the AI at important moments (like before")
+	fmt.Println("  deploying) so you can review changes and approve the next step.")
+	fmt.Println()
+
+	var enableCheckpoints bool
+	survey.AskOne(&survey.Confirm{
+		Message: "Enable review checkpoints?",
+		Default: true,
+	}, &enableCheckpoints)
+	answers.gatesEnabled = enableCheckpoints
+
+	// === INTEGRATIONS SECTION ===
+	printSectionHeader("INTEGRATIONS", "Connect to your development tools (optional)")
+
+	fmt.Println("  Connecting your code host lets the AI create pull requests,")
+	fmt.Println("  understand your branching strategy, and assist with code reviews.")
+	fmt.Println()
+
+	// VCS
 	var vcsStr string
 	survey.AskOne(&survey.Select{
-		Message: "Version control system (for MCP guidance):",
-		Options: []string{"GitHub", "GitLab", "None"},
+		Message: "Where do you host your code?",
+		Options: []string{
+			"GitHub",
+			"GitLab",
+			"Other / Skip this",
+		},
 		Default: "GitHub",
 	}, &vcsStr)
-	switch vcsStr {
-	case "GitHub":
+	switch {
+	case strings.Contains(vcsStr, "GitHub"):
 		answers.vcs = config.VCSGitHub
-	case "GitLab":
+	case strings.Contains(vcsStr, "GitLab"):
 		answers.vcs = config.VCSGitLab
 	default:
 		answers.vcs = config.VCSNone
 	}
 
-	// Tracker (for MCP guidance)
+	fmt.Println()
+	fmt.Println("  Connecting your issue tracker helps the AI understand your")
+	fmt.Println("  project requirements and link work to tickets.")
+	fmt.Println()
+
+	// Tracker
 	var trackerStr string
 	survey.AskOne(&survey.Select{
-		Message: "Issue tracker (for MCP guidance):",
-		Options: []string{"Linear", "Jira", "None"},
-		Default: "None",
+		Message: "What issue tracker do you use?",
+		Options: []string{
+			"None / Skip this",
+			"Linear",
+			"Jira",
+		},
+		Default: "None / Skip this",
 	}, &trackerStr)
-	switch trackerStr {
-	case "Linear":
+	switch {
+	case strings.Contains(trackerStr, "Linear"):
 		answers.tracker = config.TrackerLinear
-	case "Jira":
+	case strings.Contains(trackerStr, "Jira"):
 		answers.tracker = config.TrackerJira
 	default:
 		answers.tracker = config.TrackerNone
@@ -269,21 +425,49 @@ func runWizard(bp *blueprint.Blueprint) wizardAnswers {
 	return answers
 }
 
-func promptBlueprintSelection(bpManager *blueprint.Manager) string {
-	blueprints := bpManager.List()
-	options := make([]string, len(blueprints))
-	for i, bp := range blueprints {
-		options[i] = fmt.Sprintf("%s - %s", bp.ID, bp.Description)
+// printSectionHeader prints a formatted section header
+func printSectionHeader(title, subtitle string) {
+	fmt.Println()
+	fmt.Println("  " + strings.Repeat("─", 70))
+	fmt.Printf("  %s\n", title)
+	fmt.Printf("  %s\n", subtitle)
+	fmt.Println("  " + strings.Repeat("─", 70))
+	fmt.Println()
+}
+
+// formatList formats a list with a prefix
+func formatList(items []string, prefix string) string {
+	if len(items) == 0 {
+		return "(none)"
+	}
+	formatted := make([]string, len(items))
+	for i, item := range items {
+		formatted[i] = prefix + item
+	}
+	return strings.Join(formatted, ", ")
+}
+
+// formatAgentList formats agents in a readable way, wrapping if needed
+func formatAgentList(agents []string) string {
+	if len(agents) == 0 {
+		return "(none)"
 	}
 
-	var selection string
-	survey.AskOne(&survey.Select{
-		Message: "Select a blueprint:",
-		Options: options,
-	}, &selection)
+	// Join all agents, but format nicely
+	result := strings.Join(agents, ", ")
 
-	// Extract ID from selection
-	return strings.Split(selection, " - ")[0]
+	// If too long, truncate with count
+	if len(result) > 50 {
+		// Show first few and count
+		shown := agents[:3]
+		remaining := len(agents) - 3
+		result = strings.Join(shown, ", ")
+		if remaining > 0 {
+			result += fmt.Sprintf(" (+%d more)", remaining)
+		}
+	}
+
+	return result
 }
 
 func selectExistingRepos(workspacePath string) []config.RepoConfig {
@@ -292,9 +476,16 @@ func selectExistingRepos(workspacePath string) []config.RepoConfig {
 	// Find git repos in workspace
 	gitRepos, err := util.FindGitRepos(workspacePath)
 	if err != nil || len(gitRepos) == 0 {
-		fmt.Println("No git repositories found. You can add repos to workflow.yaml later.")
+		fmt.Println()
+		fmt.Println("  No git repositories found in this directory.")
+		fmt.Println("  You can add repositories to workflow.yaml later.")
+		fmt.Println()
 		return repos
 	}
+
+	fmt.Println()
+	fmt.Println("  Found these repositories in your workspace:")
+	fmt.Println()
 
 	// Build options
 	options := make([]string, len(gitRepos))
@@ -305,8 +496,9 @@ func selectExistingRepos(workspacePath string) []config.RepoConfig {
 
 	var selected []string
 	survey.AskOne(&survey.MultiSelect{
-		Message: "Select repositories to include:",
+		Message: "Which repositories should be part of this workflow?",
 		Options: options,
+		Help:    "Use space to select, enter to confirm. Selected repos will share the AI workflow.",
 	}, &selected)
 
 	for _, sel := range selected {
@@ -333,44 +525,45 @@ func configureNewRepos(bp *blueprint.Blueprint) []config.RepoConfig {
 		}
 	}
 
-	// Show defaults and allow modification
-	fmt.Println("\nDefault repositories from blueprint:")
-	for _, r := range repos {
-		fmt.Printf("  - %s (%s)\n", r.Name, r.Kind)
-	}
+	if len(repos) > 0 {
+		fmt.Println()
+		fmt.Println("  This template suggests these repositories:")
+		for _, r := range repos {
+			fmt.Printf("    - %s (%s)\n", r.Name, r.Kind)
+		}
+		fmt.Println()
 
-	var modify bool
-	survey.AskOne(&survey.Confirm{
-		Message: "Modify repository list?",
-		Default: false,
-	}, &modify)
+		var modify bool
+		survey.AskOne(&survey.Confirm{
+			Message: "Would you like to modify this list?",
+			Default: false,
+		}, &modify)
 
-	if modify {
-		// Allow adding/removing repos
-		// For simplicity, just allow adding
-		for {
-			var addMore bool
-			survey.AskOne(&survey.Confirm{
-				Message: "Add another repository?",
-				Default: false,
-			}, &addMore)
+		if modify {
+			for {
+				var addMore bool
+				survey.AskOne(&survey.Confirm{
+					Message: "Add another repository?",
+					Default: false,
+				}, &addMore)
 
-			if !addMore {
-				break
+				if !addMore {
+					break
+				}
+
+				var name, kind string
+				survey.AskOne(&survey.Input{Message: "Repository name:"}, &name)
+				survey.AskOne(&survey.Select{
+					Message: "What type of code will this repository contain?",
+					Options: []string{"node", "java", "go", "python", "swift", "docs"},
+				}, &kind)
+
+				repos = append(repos, config.RepoConfig{
+					Name: name,
+					Path: name,
+					Kind: config.RepoKind(kind),
+				})
 			}
-
-			var name, kind string
-			survey.AskOne(&survey.Input{Message: "Repository name:"}, &name)
-			survey.AskOne(&survey.Select{
-				Message: "Repository type:",
-				Options: []string{"node", "java", "go", "python", "swift", "docs"},
-			}, &kind)
-
-			repos = append(repos, config.RepoConfig{
-				Name: name,
-				Path: name,
-				Kind: config.RepoKind(kind),
-			})
 		}
 	}
 
@@ -395,53 +588,125 @@ func registerWorkflow(workspacePath string, cfg *config.WorkflowConfig) {
 	_ = workspace.SaveRegistry(reg) // Best effort, non-critical
 }
 
-func printNextSteps(answers wizardAnswers, cfg *config.WorkflowConfig, bp *blueprint.Blueprint) {
-	fmt.Println("\n" + strings.Repeat("=", 60))
-	fmt.Println("Workflow created successfully!")
-	fmt.Println(strings.Repeat("=", 60))
+// printWorkflowSummary displays the success message with ASCII workflow diagram
+func printWorkflowSummary(answers wizardAnswers, cfg *config.WorkflowConfig, bp *blueprint.Blueprint) {
+	fmt.Println()
+	fmt.Println("  " + strings.Repeat("═", 70))
+	fmt.Println("  SETUP COMPLETE!")
+	fmt.Println("  " + strings.Repeat("═", 70))
+	fmt.Println()
 
-	fmt.Printf("\nWorkflow: %s\n", cfg.Name)
-	fmt.Printf("Blueprint: %s\n", cfg.Blueprint)
-	fmt.Printf("Topology: %s\n", cfg.Topology)
-
-	fmt.Println("\n📁 Structure created:")
+	// Summary
+	fmt.Printf("  Workflow:  %s\n", cfg.Name)
+	fmt.Printf("  Template:  %s\n", bp.DisplayName)
 	if cfg.Topology == config.TopologyMultiRepo {
-		fmt.Printf("  %s/\n", answers.workspacePath)
-		fmt.Printf("  ├── %s/.claude/\n", cfg.Paths.Hub)
-		fmt.Printf("  ├── %s/workflow/\n", cfg.Paths.Docs)
-		for _, repo := range cfg.Repos {
-			fmt.Printf("  └── %s/ (.claude -> hub)\n", repo.Path)
+		fmt.Printf("  Structure: Multiple repositories\n")
+	} else {
+		fmt.Printf("  Structure: Single repository\n")
+	}
+	fmt.Println()
+
+	// ASCII Workflow Diagram
+	fmt.Println("  Your Development Workflow")
+	fmt.Println("  " + strings.Repeat("─", 70))
+	fmt.Println()
+	fmt.Println("    ┌────────┐    ┌────────┐    ┌───────────┐    ┌────────┐    ┌─────────┐")
+	fmt.Println("    │ /idea  │───>│/design │───>│/implement │───>│/review │───>│/release │")
+	fmt.Println("    └────────┘    └────────┘    └───────────┘    └────────┘    └─────────┘")
+	fmt.Println("        │             │              │               │              │")
+	fmt.Println("        v             v              v               v              v")
+	fmt.Println("     Capture      Technical      AI writes        Human        Deploy &")
+	fmt.Println("     feature      planning       the code        approval       ship it")
+	fmt.Println()
+
+	// Show enabled features
+	fmt.Println("  Enabled Features")
+	fmt.Println("  " + strings.Repeat("─", 70))
+	if answers.hooksEnabled {
+		fmt.Println("    [x] Auto-formatting  - Code is automatically formatted and validated")
+	} else {
+		fmt.Println("    [ ] Auto-formatting  - Disabled (you'll format code manually)")
+	}
+	if answers.gatesEnabled {
+		fmt.Println("    [x] Review checkpoints - AI pauses for your approval at key moments")
+	} else {
+		fmt.Println("    [ ] Review checkpoints - Disabled (AI works without pausing)")
+	}
+	fmt.Println()
+
+	// What was created
+	fmt.Println("  What Was Created")
+	fmt.Println("  " + strings.Repeat("─", 70))
+	fmt.Printf("    Commands:  %s\n", formatList(bp.Commands.Defaults, "/"))
+	fmt.Printf("    Agents:    %s\n", strings.Join(bp.Agents.Defaults, ", "))
+	fmt.Println()
+
+	// Files created
+	fmt.Println("  Files Created")
+	fmt.Println("  " + strings.Repeat("─", 70))
+	if cfg.Topology == config.TopologyMultiRepo {
+		fmt.Printf("    %s/\n", filepath.Base(answers.workspacePath))
+		fmt.Printf("    ├── %s/.claude/     (AI workflow configuration)\n", cfg.Paths.Hub)
+		fmt.Printf("    ├── %s/workflow/    (feature tracking)\n", cfg.Paths.Docs)
+		for i, repo := range cfg.Repos {
+			prefix := "├──"
+			if i == len(cfg.Repos)-1 {
+				prefix = "└──"
+			}
+			fmt.Printf("    %s %s/            (linked to workflow)\n", prefix, repo.Path)
 		}
 	} else {
-		fmt.Printf("  %s/\n", answers.workspacePath)
-		fmt.Println("  ├── .claude/")
-		fmt.Println("  ├── .ccflow/workflow.yaml")
-		fmt.Println("  └── docs/workflow/")
+		fmt.Printf("    %s/\n", filepath.Base(answers.workspacePath))
+		fmt.Println("    ├── .claude/              (AI workflow configuration)")
+		fmt.Println("    ├── .ccflow/workflow.yaml (workflow settings)")
+		fmt.Println("    └── docs/workflow/        (feature tracking)")
+	}
+	fmt.Println()
+
+	// Getting started
+	fmt.Println("  Getting Started")
+	fmt.Println("  " + strings.Repeat("─", 70))
+	fmt.Println("    1. Open your project in Claude Code")
+	fmt.Println("       (or VS Code with the Claude extension)")
+	fmt.Println()
+	fmt.Println("    2. Type /idea and describe your first feature")
+	fmt.Println("       Example: \"/idea Add user authentication with OAuth\"")
+	fmt.Println()
+	fmt.Println("    3. Follow the workflow: /design -> /implement -> /review -> /release")
+	fmt.Println("       The AI will guide you through each step")
+	fmt.Println()
+
+	// Command reference
+	fmt.Println("  Command Reference")
+	fmt.Println("  " + strings.Repeat("─", 70))
+	fmt.Println("    /idea       Describe a new feature you want to build")
+	fmt.Println("    /design     Create a technical plan for the feature")
+	fmt.Println("    /implement  Start coding with AI assistance")
+	fmt.Println("    /review     Get your code reviewed before merging")
+	fmt.Println("    /release    Prepare and deploy your changes")
+	fmt.Println("    /status     Check the status of all features")
+	fmt.Println()
+
+	// Integration hints
+	switch answers.vcs {
+	case config.VCSGitHub:
+		fmt.Println("  Optional: Enhanced Integration")
+		fmt.Println("  " + strings.Repeat("─", 70))
+		fmt.Println("    For full GitHub integration (auto-create PRs, etc.), install the")
+		fmt.Println("    GitHub MCP server: https://github.com/modelcontextprotocol/servers")
+		fmt.Println()
+	case config.VCSGitLab:
+		fmt.Println("  Optional: Enhanced Integration")
+		fmt.Println("  " + strings.Repeat("─", 70))
+		fmt.Println("    For full GitLab integration, install the GitLab MCP server")
+		fmt.Println()
 	}
 
-	fmt.Println("\n🚀 Next steps:")
-	fmt.Println("  1. Open your repository in Claude Code")
-	fmt.Println("  2. Try these commands:")
-	fmt.Println("     /idea    - Start a new feature")
-	fmt.Println("     /design  - Create a technical design")
-	fmt.Println("     /status  - Check workflow status")
-
-	if answers.vcs != config.VCSNone || answers.tracker != config.TrackerNone {
-		fmt.Println("\n🔌 MCP Integration (optional):")
-		if answers.vcs == config.VCSGitHub {
-			fmt.Println("  GitHub: Install the GitHub MCP server for PR integration")
-			fmt.Println("  https://github.com/modelcontextprotocol/servers")
-		}
-		if answers.tracker == config.TrackerLinear {
-			fmt.Println("  Linear: Install the Linear MCP server for issue tracking")
-		}
-		if answers.tracker == config.TrackerJira {
-			fmt.Println("  Jira: Install the Jira MCP server for issue tracking")
-		}
-	}
-
-	fmt.Println("\n📚 Documentation:")
-	fmt.Println("  Run 'ccflow status' to check workflow health")
-	fmt.Println("  Run 'ccflow doctor' for detailed diagnostics")
-	fmt.Println("  Run 'ccflow add-agent --help' to add custom agents")
+	// Helpful commands
+	fmt.Println("  Helpful Commands")
+	fmt.Println("  " + strings.Repeat("─", 70))
+	fmt.Println("    ccflow status    Check workflow health")
+	fmt.Println("    ccflow doctor    Diagnose issues")
+	fmt.Println("    ccflow --help    See all commands")
+	fmt.Println()
 }
