@@ -1,4 +1,4 @@
-.PHONY: build test lint clean install run help
+.PHONY: build test lint clean install run help dev dev-install clean-dev
 
 # Build variables
 BINARY_NAME=ccflow
@@ -44,6 +44,23 @@ install:
 run:
 	go run $(LDFLAGS) ./main.go $(ARGS)
 
+# Development: build and run in one command
+# Usage: make dev ARGS="run go-cli-dev"
+dev: build
+	./$(BINARY_NAME) $(ARGS)
+
+# Install to local ./bin directory (avoids PATH conflicts with Homebrew)
+dev-install:
+	@mkdir -p ./bin
+	go build $(LDFLAGS) -o ./bin/$(BINARY_NAME) ./main.go
+	@echo "Installed to ./bin/$(BINARY_NAME)"
+	@echo "Run with: ./bin/ccflow <command>"
+
+# Clean up development artifacts (keeps released Homebrew version intact)
+clean-dev:
+	rm -rf ./bin
+	@echo "Removed ./bin/ - released version at /opt/homebrew/bin/ccflow is unchanged"
+
 # Download dependencies
 deps:
 	go mod download
@@ -68,6 +85,9 @@ help:
 	@echo "  clean         - Clean build artifacts"
 	@echo "  install       - Install to GOPATH/bin"
 	@echo "  run ARGS=...  - Run the CLI with arguments"
+	@echo "  dev ARGS=...  - Build and run in one command"
+	@echo "  dev-install   - Install to ./bin/ for local testing"
+	@echo "  clean-dev     - Remove ./bin/ development artifacts"
 	@echo "  deps          - Download and tidy dependencies"
 	@echo "  verify        - Verify dependencies"
 	@echo "  snapshot      - Build snapshot with goreleaser"

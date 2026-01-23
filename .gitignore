@@ -37,4 +37,8 @@ build/
 
 # GoReleaser
 dist/
-.claude/CLAUDE.md
+
+# ccflow workflow files
+/.ccflow/
+/.claude/
+/docs/workflow/

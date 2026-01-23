@@ -93,22 +93,22 @@ output "instance_id" {
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .name }}
+  name: <app-name>
   labels:
-    app: {{ .name }}
+    app: <app-name>
 spec:
-  replicas: {{ .replicas }}
+  replicas: <replica-count>
   selector:
     matchLabels:
-      app: {{ .name }}
+      app: <app-name>
   template:
     metadata:
       labels:
-        app: {{ .name }}
+        app: <app-name>
     spec:
       containers:
-      - name: {{ .name }}
-        image: {{ .image }}
+      - name: <app-name>
+        image: <image-name>
         resources:
           requests:
             memory: "64Mi"

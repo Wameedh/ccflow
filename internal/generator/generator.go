@@ -2,7 +2,9 @@ package generator
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Wameedh/ccflow/internal/blueprint"
 	"github.com/Wameedh/ccflow/internal/config"
@@ -31,6 +33,65 @@ type GenerateOptions struct {
 	VCS           config.VCSProvider
 	Tracker       config.TrackerProvider
 	Force         bool
+}
+
+// CheckExistingFiles returns paths of files that would be overwritten during generation.
+// This allows callers to prompt the user before proceeding.
+func (g *Generator) CheckExistingFiles(opts GenerateOptions) ([]string, error) {
+	bp, err := g.bpManager.Get(opts.Blueprint)
+	if err != nil {
+		return nil, err
+	}
+
+	var existing []string
+
+	// Determine base paths based on topology
+	var claudePath, markerPath string
+	if opts.Topology == config.TopologyMultiRepo {
+		hubPath := filepath.Join(opts.WorkspacePath, "workflow-hub")
+		claudePath = filepath.Join(hubPath, ".claude")
+		markerPath = filepath.Join(hubPath, "workflow.yaml")
+	} else {
+		claudePath = filepath.Join(opts.WorkspacePath, ".claude")
+		markerPath = filepath.Join(opts.WorkspacePath, ".ccflow", "workflow.yaml")
+	}
+
+	// Check workflow.yaml marker
+	if util.FileExists(markerPath) {
+		existing = append(existing, markerPath)
+	}
+
+	// Check agents
+	for _, agentName := range bp.Agents.Defaults {
+		agentPath := filepath.Join(claudePath, "agents", agentName+".md")
+		if util.FileExists(agentPath) {
+			existing = append(existing, agentPath)
+		}
+	}
+
+	// Check commands
+	for _, cmdName := range bp.Commands.Defaults {
+		cmdPath := filepath.Join(claudePath, "commands", cmdName+".md")
+		if util.FileExists(cmdPath) {
+			existing = append(existing, cmdPath)
+		}
+	}
+
+	// Check hooks
+	for _, hookName := range bp.Hooks.Defaults {
+		hookPath := filepath.Join(claudePath, "hooks", hookName+".sh")
+		if util.FileExists(hookPath) {
+			existing = append(existing, hookPath)
+		}
+	}
+
+	// Check settings.json
+	settingsPath := filepath.Join(claudePath, "settings.json")
+	if util.FileExists(settingsPath) {
+		existing = append(existing, settingsPath)
+	}
+
+	return existing, nil
 }
 
 // Generate creates a new workflow structure
@@ -111,6 +172,11 @@ func (g *Generator) generateMultiRepoStructure(workspacePath, hubPath string, cf
 		return err
 	}
 
+	// Update .gitignore in workspace root
+	if err := g.updateGitignore(workspacePath); err != nil {
+		return fmt.Errorf("failed to update .gitignore: %w", err)
+	}
+
 	return nil
 }
 
@@ -137,6 +203,11 @@ func (g *Generator) generateSingleRepoStructure(repoPath string, cfg *config.Wor
 	markerPath := filepath.Join(ccflowPath, "workflow.yaml")
 	if err := g.writeWorkflowMarker(markerPath, cfg, force); err != nil {
 		return err
+	}
+
+	// Update .gitignore
+	if err := g.updateGitignore(repoPath); err != nil {
+		return fmt.Errorf("failed to update .gitignore: %w", err)
 	}
 
 	return nil
@@ -297,4 +368,51 @@ mcp:
 	}
 
 	return yaml
+}
+
+// updateGitignore adds ccflow-specific entries to .gitignore
+func (g *Generator) updateGitignore(dir string) error {
+	entries := []string{
+		"/.ccflow/",
+		"/.claude/",
+		"/docs/workflow/",
+	}
+
+	gitignorePath := filepath.Join(dir, ".gitignore")
+
+	// Read existing content (if any)
+	existing, _ := os.ReadFile(gitignorePath)
+	content := string(existing)
+
+	// Check which entries are missing
+	var toAdd []string
+	for _, entry := range entries {
+		if !strings.Contains(content, entry) {
+			toAdd = append(toAdd, entry)
+		}
+	}
+
+	if len(toAdd) == 0 {
+		return nil // Nothing to add
+	}
+
+	// Append entries to .gitignore
+	f, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Add blank line separator if file has content and doesn't end with newline
+	if len(content) > 0 && !strings.HasSuffix(content, "\n") {
+		f.WriteString("\n")
+	}
+
+	// Write header and entries
+	f.WriteString("\n# ccflow workflow files\n")
+	for _, entry := range toAdd {
+		f.WriteString(entry + "\n")
+	}
+
+	return nil
 }

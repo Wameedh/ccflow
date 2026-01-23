@@ -73,6 +73,44 @@ func runWorkflow(cmd *cobra.Command, args []string) {
 		Force:         forceFlag,
 	}
 
+	// Pre-flight check: warn about existing files
+	if !forceFlag {
+		existingFiles, checkErr := gen.CheckExistingFiles(opts)
+		if checkErr != nil {
+			exitWithError("failed to check existing files: %v", checkErr)
+		}
+
+		if len(existingFiles) > 0 {
+			fmt.Printf("\n%d file(s) already exist:\n", len(existingFiles))
+			for _, f := range existingFiles {
+				// Show relative path if possible
+				relPath, relErr := filepath.Rel(answers.workspacePath, f)
+				if relErr != nil {
+					relPath = f
+				}
+				fmt.Printf("  - %s\n", relPath)
+			}
+
+			var overwrite bool
+			promptErr := survey.AskOne(&survey.Confirm{
+				Message: "Overwrite existing files?",
+				Default: false,
+			}, &overwrite)
+
+			if promptErr != nil {
+				// If prompt fails (non-interactive), require --force flag
+				exitWithError("files already exist. Use --force to overwrite, or run interactively to confirm")
+			}
+
+			if !overwrite {
+				fmt.Println("\nAborted. No files were modified.")
+				return
+			}
+			fmt.Println("\nOverwriting existing files...")
+			opts.Force = true
+		}
+	}
+
 	cfg, err := gen.Generate(opts)
 	if err != nil {
 		exitWithError("failed to generate workflow: %v", err)
@@ -88,7 +126,7 @@ func runWorkflow(cmd *cobra.Command, args []string) {
 			Repos:         answers.repos,
 			WorkspacePath: answers.workspacePath,
 			Mode:          installer.InstallModeSymlink,
-			Force:         forceFlag,
+			Force:         opts.Force,
 		})
 
 		fmt.Println("\nInstalling .claude to repositories:")
