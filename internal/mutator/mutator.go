@@ -165,25 +165,41 @@ func (m *Mutator) registerHook(opts AddOptions) error {
 
 // addHookRegistration adds a hook registration to settings
 func (m *Mutator) addHookRegistration(settings map[string]interface{}, settingsPath string, hookReg blueprint.HookRegistration) error {
-	hooks, ok := settings["hooks"].([]interface{})
+	hooks, ok := settings["hooks"].(map[string]interface{})
 	if !ok {
-		hooks = []interface{}{}
+		hooks = make(map[string]interface{})
 	}
 
 	// Add each event from the hook registration
 	for _, event := range hookReg.Events {
+		// Build the hook entry in new format
 		hookEntry := map[string]interface{}{
-			"event":  event.Event,
-			"script": "./" + hookReg.Script,
+			"hooks": []interface{}{
+				map[string]interface{}{
+					"type":    "command",
+					"command": "./" + hookReg.Script,
+				},
+			},
 		}
+
+		// Add matcher if there are tool filters
 		if len(event.Commands) > 0 {
-			hookEntry["commands"] = event.Commands
+			hookEntry["matcher"] = map[string]interface{}{
+				"tools": event.Commands,
+			}
+		}
+
+		// Get or create the event array
+		eventHooks, ok := hooks[event.Event].([]interface{})
+		if !ok {
+			eventHooks = []interface{}{}
 		}
 
 		// Check if this hook already exists
-		if !m.hookExists(hooks, event.Event, hookReg.Script) {
-			hooks = append(hooks, hookEntry)
+		if !m.hookExists(eventHooks, hookReg.Script) {
+			eventHooks = append(eventHooks, hookEntry)
 		}
+		hooks[event.Event] = eventHooks
 	}
 
 	settings["hooks"] = hooks
@@ -194,48 +210,57 @@ func (m *Mutator) addHookRegistration(settings map[string]interface{}, settingsP
 
 // addDefaultHookRegistration adds a default hook registration
 func (m *Mutator) addDefaultHookRegistration(settings map[string]interface{}, settingsPath, hookName string) error {
-	hooks, ok := settings["hooks"].([]interface{})
+	hooks, ok := settings["hooks"].(map[string]interface{})
 	if !ok {
-		hooks = []interface{}{}
+		hooks = make(map[string]interface{})
 	}
 
 	// Default: register as Stop event
+	hookScript := "./hooks/" + hookName + ".sh"
 	hookEntry := map[string]interface{}{
-		"event":  "Stop",
-		"script": "./hooks/" + hookName + ".sh",
+		"hooks": []interface{}{
+			map[string]interface{}{
+				"type":    "command",
+				"command": hookScript,
+			},
+		},
 	}
 
-	if !m.hookExistsByScript(hooks, "./hooks/"+hookName+".sh") {
-		hooks = append(hooks, hookEntry)
+	// Get or create the Stop event array
+	stopHooks, ok := hooks["Stop"].([]interface{})
+	if !ok {
+		stopHooks = []interface{}{}
 	}
 
+	if !m.hookExists(stopHooks, hookScript) {
+		stopHooks = append(stopHooks, hookEntry)
+	}
+
+	hooks["Stop"] = stopHooks
 	settings["hooks"] = hooks
 	return m.writeSettings(settingsPath, settings)
 }
 
-// hookExists checks if a hook with the same event and script already exists
-func (m *Mutator) hookExists(hooks []interface{}, event, script string) bool {
-	for _, h := range hooks {
-		hook, ok := h.(map[string]interface{})
+// hookExists checks if a hook with the same script already exists in an event's hook list
+func (m *Mutator) hookExists(eventHooks []interface{}, script string) bool {
+	for _, h := range eventHooks {
+		hookEntry, ok := h.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		if hook["event"] == event && hook["script"] == "./"+script {
-			return true
-		}
-	}
-	return false
-}
-
-// hookExistsByScript checks if a hook with the same script already exists
-func (m *Mutator) hookExistsByScript(hooks []interface{}, script string) bool {
-	for _, h := range hooks {
-		hook, ok := h.(map[string]interface{})
+		// Check in the hooks array within this entry
+		hooksArr, ok := hookEntry["hooks"].([]interface{})
 		if !ok {
 			continue
 		}
-		if hook["script"] == script {
-			return true
+		for _, hk := range hooksArr {
+			hook, ok := hk.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if hook["command"] == script || hook["command"] == "./"+script {
+				return true
+			}
 		}
 	}
 	return false

@@ -1,15 +1,17 @@
 {
-  "hooks": [
-    {
-      "event": "PostToolUse",
-      "commands": ["Write", "Edit"],
-      "script": "./hooks/post-edit.sh"
-    },
-    {
-      "event": "Stop",
-      "script": "./hooks/end-of-turn.sh"
-    }
-  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": { "tools": ["Write", "Edit"] },
+        "hooks": [{ "type": "command", "command": "./hooks/post-edit.sh" }]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "./hooks/end-of-turn.sh" }]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Read(**)",

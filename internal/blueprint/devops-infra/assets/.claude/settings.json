@@ -1,20 +1,23 @@
 {
-  "hooks": [
-    {
-      "event": "PostToolUse",
-      "commands": ["Write", "Edit"],
-      "script": "./hooks/post-edit.sh"
-    },
-    {
-      "event": "PreToolUse",
-      "commands": ["Bash"],
-      "script": "./hooks/pre-apply.sh"
-    },
-    {
-      "event": "Stop",
-      "script": "./hooks/end-of-turn.sh"
-    }
-  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": { "tools": ["Write", "Edit"] },
+        "hooks": [{ "type": "command", "command": "./hooks/post-edit.sh" }]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": { "tools": ["Bash"] },
+        "hooks": [{ "type": "command", "command": "./hooks/pre-apply.sh" }]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "./hooks/end-of-turn.sh" }]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Read(**)",
