@@ -2,7 +2,7 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": { "tools": ["Write", "Edit"] },
+        "matcher": "Write|Edit",
         "hooks": [{ "type": "command", "command": "./hooks/post-edit.sh" }]
       }
     ],

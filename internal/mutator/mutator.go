@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Wameedh/ccflow/internal/blueprint"
 	"github.com/Wameedh/ccflow/internal/util"
@@ -182,11 +183,9 @@ func (m *Mutator) addHookRegistration(settings map[string]interface{}, settingsP
 			},
 		}
 
-		// Add matcher if there are tool filters
+		// Add matcher if there are tool filters (string format with pipe separator)
 		if len(event.Commands) > 0 {
-			hookEntry["matcher"] = map[string]interface{}{
-				"tools": event.Commands,
-			}
+			hookEntry["matcher"] = strings.Join(event.Commands, "|")
 		}
 
 		// Get or create the event array

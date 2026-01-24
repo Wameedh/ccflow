@@ -2,13 +2,13 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": { "tools": ["Write", "Edit"] },
+        "matcher": "Write|Edit",
         "hooks": [{ "type": "command", "command": "./hooks/post-edit.sh" }]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": { "tools": ["Bash"] },
+        "matcher": "Bash",
         "hooks": [{ "type": "command", "command": "./hooks/pre-apply.sh" }]
       }
     ],
